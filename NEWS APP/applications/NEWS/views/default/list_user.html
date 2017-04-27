@@ -1,0 +1,24 @@
+{{extend 'layout1.html'}}
+{{include}}
+{{for z in t:}}
+{{=A(z,_href=URL('admin_catgry.html',args=z))}}&nbsp;&nbsp;&nbsp;|
+{{pass}}
+<div id = "content">
+<ol>
+<br/>
+<br/>
+<body style= "background-image : url(http://www.texturepalace.com/gallery/paper/0129/7_paper_texture_big_10_01_29.jpg); background-repeat:no-repeat">
+{{for z in y:}}
+{{if z['em']!="app_admin@gmail.com":}}
+<li>
+<strong><font size="4">{{=z['fn']}}&nbsp;{{=z['ln']}}</font></strong>
+<br/>
+<font size="2">Email : {{=z['em']}}</font><br/>
+<i class="icon-trash"></i>
+<font size="2">{{=A('Delete',_href=URL('delete_user.html',args=z['id']))}}</font>&nbsp;&nbsp;
+<br/>
+<br/>
+<br/>
+</li>
+{{pass}}
+{{pass}}

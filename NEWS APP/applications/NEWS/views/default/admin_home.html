@@ -1,0 +1,40 @@
+{{extend 'layout1.html'}}
+{{include}}
+<body style= "background-image : url(http://fc08.deviantart.net/fs28/f/2008/055/3/b/Paper_Texture_by_Spiteful_Pie_Stock.jpg); background-repeat:no-repeat">
+{{for z in t:}}
+{{=A(z,_href=URL('admin_catgry.html',args=z))}}&nbsp;&nbsp;&nbsp;|
+{{pass}}
+<div id = "content">
+<ol>
+<br/>
+<br/>
+{{for z in y:}}
+<li>
+
+<strong><font size="4"><a href={{=z['url']}}>{{=z['Head']}}</a></font></strong>
+<br/>
+<font size="2" color="brown">Category : &nbsp;&nbsp;&nbsp;{{=z['Cat']}}</font>
+<br/>
+<br/>
+{{if z['Des'] != "":}}
+<font size="3">Description&nbsp;:&nbsp;{{=z['Des']}}</font>
+{{else:}}
+<font size="3">No Description</font>
+{{pass}}
+<br/><br/>
+{{if z['video']!=None and z['video']!="":}}
+<iframe title="YouTube video player" width="480" height="390" src={{=z['video']}} frameborder="0" allowfullscreen></iframe>
+{{pass}}
+<br/><br/>
+<font size="2">Posted By&nbsp;:&nbsp;{{=z['By']}}</font>
+<br/>
+<font size="2">Likes : {{=z['likes']}}&nbsp;|&nbsp;Dislikes : {{=z['dislikes']}}</font><br/>
+<i class="icon-trash"></i>
+<font size="2">{{=A('Delete',_href=URL('delete_admin.html',args=z['id']))}}</font>&nbsp;&nbsp;
+<br/>
+<font size="2">Posted On : {{=z['On']}}</font>
+<br/>
+<br/>
+<br/>
+</li>
+{{pass}}

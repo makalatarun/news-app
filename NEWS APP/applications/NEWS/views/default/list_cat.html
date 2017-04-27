@@ -1,0 +1,15 @@
+{{extend 'layout1.html'}}
+{{include}}
+<body style= "background-image : url(http://www.wallpaperdev.com/stock/textures-wallpapers-texture-paper-light-brown-yellow-background-paper-pics.jpg); background-repeagt:no-repeat">
+<div id = "content">
+<br/>
+<br/>
+{{for z in y:}}
+
+<strong><font size="4">{{=A(z['name'],_href=URL('admin_catgry.html',args=z['name']))}}</a></font></strong>
+<br/>
+<font size="2">{{=A('Delete',_href=URL('delete_category.html',args=z['id']))}}&nbsp;&nbsp;</font>
+<br/>
+<br/>
+{{pass}}
+</div>

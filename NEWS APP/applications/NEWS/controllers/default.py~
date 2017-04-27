@@ -1,0 +1,528 @@
+# -*- coding: utf-8 -*-
+# this file is released under public domain and you can use without limitations
+
+#########################################################################
+## This is a sample controller
+## - index is the default action of any application
+## - user is required for authentication and authorization
+## - download is for downloading files uploaded in the db (does streaming)
+## - call exposes all registered services (none by default)
+#########################################################################
+
+
+def index1():
+    """
+    example action using the internationalization operator T and flash
+    rendered by views/default/index.html or views/generic.html
+
+    if you need a simple wiki simple replace the two lines below with:
+    return auth.wiki()
+    """
+    return dict(message=T('Hello World'))
+
+
+def user():
+    """
+    exposes:
+    http://..../[app]/default/user/login
+    http://..../[app]/default/user/logout
+    http://..../[app]/default/user/register
+    http://..../[app]/default/user/profile
+    http://..../[app]/default/user/retrieve_password
+    http://..../[app]/default/user/change_password
+    http://..../[app]/default/user/manage_users (requires membership in 
+    use @auth.requires_login()
+        @auth.requires_membership('group name')
+        @auth.requires_permission('read','table name',record_id)
+    to decorate functions that need access control
+    """
+    return dict(form=auth())
+
+@cache.action()
+def download():
+    """
+    allows downloading of uploaded files
+    http://..../[app]/default/download/[filename]
+    """
+    return response.download(request, db)
+
+
+def call():
+    """
+    exposes services. for example:
+    http://..../[app]/default/call/jsonrpc
+    decorate with @services.jsonrpc the functions to expose
+    supports xml, json, xmlrpc, jsonrpc, amfrpc, rss, csv
+    """
+    return service()
+
+
+@auth.requires_signature()
+def data():
+    """
+    http://..../[app]/default/data/tables
+    http://..../[app]/default/data/create/[table]
+    http://..../[app]/default/data/read/[table]/[id]
+    http://..../[app]/default/data/update/[table]/[id]
+    http://..../[app]/default/data/delete/[table]/[id]
+    http://..../[app]/default/data/select/[table]
+    http://..../[app]/default/data/search/[table]
+    but URLs must be signed, i.e. linked with
+      A('table',_href=URL('data/tables',user_signature=True))
+    or with the signed load operator
+      LOAD('default','data.load',args='tables',ajax=True,user_signature=True)
+    """
+    return dict(form=crud())
+import datetime
+def index():
+	a=db(db.news.id > 0).select(db.news.ALL,orderby=~db.news.ranks)
+    	response.flash = T("Welcome to NOUVELLES_EN_LIGNE")
+	y=[]
+	t=[]
+	m1 = db(db.category.id > 0).select(db.category.ALL)
+	for k in m1:
+		w=k.name
+		t.append(w)
+#for k in m1:
+#		t.append(k.name)
+	for k in a:
+		x={}
+		id2 = k['posted_by']
+		c = db((db.news.posted_by == id2) & (db.auth_user.id == db.news.posted_by)).select(db.auth_user.ALL)[0]
+		id1=k['Category']
+		b=db((db.news.Category == id1) & (db.category.id == db.news.Category)).select(db.category.ALL)[0]
+		x['Head']=k['Heading']
+		x['Cat']=b['name']
+		x['dislikes']=str(k['dislikes'])
+		x['id']=k['id']
+		x['Des']=k['Description']
+		x['By']=str(c['first_name'])+" " +str(c['last_name'])
+		x['On']=k['posted_on']
+		x['likes']=str(k['likes'])
+		x['url']=k['Url']
+		if k['video']!=None and k['video']!="":
+			x['video']="http://www.youtube.com/embed/"+(str(k['video']).split("="))[1]
+		else:
+			x['video']=k['video']
+		y.append(x)
+		
+	return locals()
+def catgry():
+	a=db(db.category.id > 0).select(db.category.ALL)
+	t=[]
+	for k in a:
+		w=k.name
+		t.append(w)
+	for k in a:
+		print request.args(0)
+		if k['name']==request.args(0):
+			z=k['id']
+			y=[]
+			c=db((db.category.id == z)&(db.news.Category==db.category.id)).select(db.news.ALL,orderby=~db.news.ranks)
+			for w in c:
+				x={}
+				id2 = w['posted_by']
+				c1 = db((db.news.posted_by == id2) & (db.auth_user.id == db.news.posted_by)).select(db.auth_user.ALL)[0]
+				x['Head']=w['Heading']
+				x['Cat']=k['name']
+				x['Des']=w['Description']
+				x['By']=str(c1['first_name'])+" " +str(c1['last_name'])
+				x['On']=w['posted_on']
+				x['likes']=str(w['likes'])
+				x['dislikes']=str(w['dislikes'])
+				x['url']=w['Url']
+				if w['video']!=None and w['video']!="":
+					x['video']="http://www.youtube.com/embed/"+(str(w['video']).split("="))[1]
+				else:
+					x['video']=w['video']
+				x['id']=w['id']
+				y.append(x)
+
+	return locals()
+@auth.requires_login()	
+def ad_post():
+#	db.news.likes.writable=db.news.likes.readable=False
+#idb.news.cmmnt.writable=db.news.cmmnt.readable=False
+	db.news.posted_on.readable=db.news.posted_on.writable=False
+	db.news.likes.readable=db.news.likes.writable=False
+	db.news.dislikes.readable=db.news.dislikes.writable=False
+	db.news.ranks.readable=db.news.ranks.writable=False
+	usr=db(db.auth_user.id==auth.user_id).select(db.auth_user.ALL)[0]
+	db.news.posted_by.default=usr['id']
+	db.news.posted_by.readable=db.news.posted_by.writable=False
+	db.LD.new_id.default=db.news.id
+	db.news.likes.readable=db.news.likes.writable=False
+	form=SQLFORM(db.news)
+	if form.process().accepted:
+		session.flash='Your post is successful'
+		redirect(URL(r=request,f='index'))
+	elif form.errors:
+		session.flash='Error in posting'
+	return locals()
+@auth.requires_login()	
+def post():
+#	db.news.likes.writable=db.news.likes.readable=False
+#idb.news.cmmnt.writable=db.news.cmmnt.readable=False
+	db.news.posted_on.readable=db.news.posted_on.writable=False
+	db.news.likes.readable=db.news.likes.writable=False
+	db.news.dislikes.readable=db.news.dislikes.writable=False
+	db.news.ranks.readable=db.news.ranks.writable=False
+	usr=db(db.auth_user.id==auth.user_id).select(db.auth_user.ALL)[0]
+	db.news.posted_by.default=usr['id']
+	db.news.posted_by.readable=db.news.posted_by.writable=False
+	db.LD.new_id.default=db.news.id
+	db.news.likes.readable=db.news.likes.writable=False
+	form=SQLFORM(db.news)
+	if form.process().accepted:
+		session.flash='Your post is successful'
+		redirect(URL(r=request,f='index'))
+	elif form.errors:
+		session.flash='Error in posting'
+	return locals()
+def view():
+	id1=request.args(0)
+	a1=db(db.category.id > 0).select(db.category.ALL)
+	t=[]
+	for k in a1:
+		w=k.name
+		t.append(w)
+	a=db((db.comments.id>0)&(db.comments.new_id==id1)).select(db.comments.ALL)
+	b=db(db.news.id==id1).select(db.news.ALL)[0]
+	p=db((db.category.id==db.news.Category)&(db.news.id==id1)).select(db.category.ALL)[0]
+	m={}
+	m['Head']=b.Heading
+	m['on']=b.posted_on
+	m['Cat']=p.name
+	m['by']=b.posted_by
+	m['Des']=b.Description
+	m['url']=b.Url
+	m['id']=b.id
+	m['likes']=b.likes
+	if b.video!=None and b.video!="":
+			m['video']="http://www.youtube.com/embed/"+(str(b.video).split("="))[1]
+	else:
+			m['video']=b.video
+	m['dislikes']=b.dislikes
+	y=[]
+	for k in a:
+		x={}
+		s=db(db.auth_user.id==k['commented_by']).select(db.auth_user.ALL)[0]
+		x['body']=k['body']
+		x['on']=k['commented_on']
+		x['by']=str(s.first_name)+" "+str(s.last_name)
+		y.append(x)
+	z1=[]
+	z1.append(m)
+	return locals()
+@auth.requires_login()
+def likes_h():
+	id1=request.args(0)
+	a=db(db.news.id == id1).select(db.news.ALL)[0]
+	d = db(db.auth_user.id == auth.user_id).select(db.auth_user.ALL)[0]
+	db.LD.update_or_insert(new_id=id1,usr=d['id'])
+	x=db((db.LD.new_id==id1)&(db.LD.usr==d['id'])).select(db.LD.ALL)[0]
+	if x.l == True and x.d == False:
+		x.l=False
+		a.likes-=1
+		a.ranks-=5
+		session.flash="You have unliked the news"
+	elif x.l==False and x.d==True:
+		x.l=True
+		x.d=False
+		a.likes+=1
+		a.ranks+=8
+		session.flash="You have liked the news"
+	elif x.l==False and x.d==False:
+		x.l=True
+		a.ranks+=5
+		a.likes+=1
+		session.flash="You have liked the news"
+	x.update_record()
+	a.update_record()
+	redirect(URL(r=request,f=index))
+	return locals()
+@auth.requires_login()
+def unlike_c():
+	id1=request.args(0)
+	a=db(db.news.id == id1).select(db.news.ALL)[0]
+	y=db((db.news.id==id1)&(db.news.Category == db.category.id)).select(db.category.ALL)[0]
+	d = db(db.auth_user.id == auth.user_id).select(db.auth_user.ALL)[0]
+	db.LD.update_or_insert(new_id=id1,usr=d['id'])
+	x=db((db.LD.new_id==id1)&(db.LD.usr==d['id'])).select(db.LD.ALL)[0]
+	if x.l == True and x.d == False:
+		x.d=True
+		x.l=False
+		a.dislikes+=1
+		a.ranks-=8
+		session.flash="You have disliked the news"
+	elif x.l==False and x.d==True:
+		x.d=False
+		a.ranks+=3
+		a.dislikes-=1
+		session.flash="You have reverted your dislike"
+	elif x.l==False and x.d==False:
+		x.d=True
+		a.ranks-=3
+		a.dislikes+=1
+		session.flash="You have disliked the news"
+	x.update_record()
+	a.update_record()
+	z="catgry.html/"+str(y['name'])
+	redirect(URL(r=request,f=z))
+	return locals()
+@auth.requires_login()
+def likes_c():
+	id1=request.args(0)
+	a=db(db.news.id == id1).select(db.news.ALL)[0]
+	y=db((db.news.id==id1)&(db.news.Category == db.category.id)).select(db.category.ALL)[0]
+	d = db(db.auth_user.id == auth.user_id).select(db.auth_user.ALL)[0]
+	db.LD.update_or_insert(new_id=id1,usr=d['id'])
+	x=db((db.LD.new_id==id1)&(db.LD.usr==d['id'])).select(db.LD.ALL)[0]
+	if x.l == True and x.d == False:
+		x.l=False
+		a.ranks-=5
+		a.likes-=1
+		session.flash="You have unliked the news"
+	elif x.l==False and x.d==True:
+		x.l=True
+		x.d=False
+		a.likes+=1
+		a.ranks+=8
+		session.flash="You have liked the news"
+	elif x.l==False and x.d==False:
+		x.l=True
+		a.ranks+=5
+		a.likes+=1
+		session.flash="You have liked the news"
+	x.update_record()
+	a.update_record()
+	z="catgry.html/"+str(y['name'])
+	redirect(URL(r=request,f=z))
+	return locals()
+@auth.requires_login()
+def unlike_h():
+	id1=request.args(0)
+	a=db(db.news.id == id1).select(db.news.ALL)[0]
+	d = db(db.auth_user.id == auth.user_id).select(db.auth_user.ALL)[0]
+	db.LD.update_or_insert(new_id=id1,usr=d['id'])
+	x=db((db.LD.new_id==id1)&(db.LD.usr==d['id'])).select(db.LD.ALL)[0]
+	if x.l == True and x.d == False:
+		x.d=True
+		x.l=False
+		a.dislikes+=1
+		a.ranks-=8
+		session.flash="You have disliked the news"
+	elif x.l==False and x.d==True:
+		x.d=False
+		a.dislikes-=1
+		a.ranks+=3
+		session.flash="You have reverted your dislike of the news"
+	elif x.l==False and x.d==False:
+		x.d=True
+		a.dislikes+=1
+		a.ranks-=3
+		session.flash="You have disliked the news"
+	x.update_record()
+	a.update_record()
+	redirect(URL(r=request,f='index'))
+	return locals()
+@auth.requires_login()
+def mynews():
+	t=[]
+	m1 = db(db.category.id > 0).select(db.category.ALL)
+	for k in m1:
+		w=k.name
+		t.append(w)
+	y=[]
+	a = db((db.auth_user.id == auth.user_id)&(db.news.posted_by==db.auth_user.id)).select(db.news.ALL,orderby=~db.news.likes)
+	for k in a:
+				x={}
+				s=db(db.category.id==k['Category']).select(db.category.ALL)[0]
+				x['Head']=k['Heading']
+				x['Cat']=s.name
+				x['Des']=k['Description']
+				x['On']=k['posted_on']
+				x['likes']=str(k['likes'])
+				x['dislikes']=str(k['dislikes'])
+				x['url']=k['Url']
+				if k['video']!=None and k['video']!="":
+					x['video']="http://www.youtube.com/embed/"+(str(k['video']).split("="))[1]
+				else:
+					x['video']=k['video']
+				x['id']=k['id']
+				y.append(x)
+	return locals()
+@auth.requires_login()
+def mynews_add():
+	t=[]
+	m1 = db(db.category.id > 0).select(db.category.ALL)
+	for k in m1:
+		w=k.name
+		t.append(w)
+	y=[]
+	a = db((db.auth_user.id == auth.user_id)&(db.news.posted_by==db.auth_user.id)).select(db.news.ALL,orderby=~db.news.likes)
+	for k in a:
+				x={}
+				x['Head']=k['Heading']
+				x['Cat']=k['Category']
+				x['Des']=k['Description']
+				x['On']=k['posted_on']
+				x['likes']=str(k['likes'])
+				x['dislikes']=str(k['dislikes'])
+				x['url']=k['Url']
+				if k['video']!=None and k['video']!="":
+					x['video']="http://www.youtube.com/embed/"+(str(k['video']).split("="))[1]
+				else:
+					x['video']=k['video']
+				x['id']=k['id']
+				y.append(x)
+	return locals()
+@auth.requires_login()
+def edit_news():
+	id1=int(request.args(0))
+	db.news.likes.writable=db.news.likes.readable=False
+	db.news.dislikes.writable=db.news.dislikes.readable=False
+	db.news.posted_by.writable=db.news.posted_by.readable=False
+	db.news.ranks.writable=db.news.ranks.readable=False
+	db.news.id.writable=db.news.id.readable=False
+	db.news.posted_on.readable=db.news.posted_on.writable=False
+	form=SQLFORM(db.news,id1)
+	if form.accepts(request.vars,session):
+		redirect(URL(r=request,f=mynews))
+	elif form.errors:
+	 	response.flash='errors'
+	return locals()
+@auth.requires_login()
+def delete_news():
+	id1=int(request.args(0))
+	db(db.news.id == id1).delete()
+	redirect(URL(r=request,f=mynews))
+	return locals()
+@auth.requires_login()
+def add_comments():
+	id1=int(request.args(0))
+#a=db((db.news.id==id1)&(db.comments.new_id==db.news.id)).select(db.comments.ALL)[0]
+	y=db((db.news.id==id1)&(db.news.Category == db.category.id)).select(db.category.ALL)[0]
+	db.comments.new_id.default=id1
+	z="catgry.html/"+str(y['name'])
+	db.comments.new_id.writable=db.comments.new_id.readable=False
+	usr=db(db.auth_user.id==auth.user_id).select(db.auth_user.ALL)[0]
+	db.comments.commented_by.default=usr['id']
+	db.comments.commented_on.default=datetime.datetime.now()
+	db.comments.commented_by.readable=db.comments.commented_by.writable=False
+	db.comments.commented_on.readable=db.comments.commented_on.writable=False
+	form=SQLFORM(db.comments)
+	if form.accepts(request.vars,session):
+		session.flash="Successful"
+		redirect(URL(r=request,f=z))
+	elif form.errors:
+	 	session.flash="errors"
+	return locals()
+import datetime
+@auth.requires_login()
+def add_comments_h():
+	id1=int(request.args(0))
+#a=db((db.news.id==id1)&(db.comments.new_id==db.news.id)).select(db.comments.ALL)[0]
+	db.comments.new_id.default=id1
+	db.comments.new_id.writable=db.comments.new_id.readable=False
+	usr=db(db.auth_user.id==auth.user_id).select(db.auth_user.ALL)[0]
+	db.comments.commented_by.default=usr['id']
+	db.comments.commented_on.default=datetime.datetime.now()
+	db.comments.commented_by.readable=db.comments.commented_by.writable=False
+	db.comments.commented_on.readable=db.comments.commented_on.writable=False
+	form=SQLFORM(db.comments)
+	if form.accepts(request.vars,session):
+		session.flash="Successful"
+	elif form.errors:
+	 	session.flash="errors"
+	return locals()
+@auth.requires_login()
+def admin_home():
+	a=db(db.news.id > 0).select(db.news.ALL,orderby=~db.news.ranks)
+	y=[]
+	t=[]
+	m1 = db(db.category.id > 0).select(db.category.ALL)
+	for k in m1:
+		w=k.name
+		t.append(w)
+#for k in m1:
+#		t.append(k.name)
+	for k in a:
+		x={}
+		id2 = k['posted_by']
+		c = db((db.news.posted_by == id2) & (db.auth_user.id == db.news.posted_by)).select(db.auth_user.ALL)[0]
+		id1=k['Category']
+		b=db((db.news.Category == id1) & (db.category.id == db.news.Category)).select(db.category.ALL)[0]
+		x['Head']=k['Heading']
+		x['Cat']=b['name']
+		x['id']=k['id']
+		x['dislikes']=k['dislikes']
+		if k['video']!=None and k['video']!="":
+			x['video']="http://www.youtube.com/embed/"+(str(k['video']).split("="))[1]
+		else:
+			x['video']=k['video']
+		x['Des']=k['Description']
+		x['By']=str(c['first_name'])+" " +str(c['last_name'])
+		x['On']=k['posted_on']
+		x['likes']=str(k['likes'])
+		x['url']=k['Url']
+		y.append(x)		
+	return locals()
+@auth.requires_login()
+def add_cat():
+	form=SQLFORM(db.category)
+	if form.accepts(request.vars,session):
+		redirect(URL(r=request,f=admin_home))
+	elif form.errors:
+	 	response.flash="errors"
+	return locals()
+@auth.requires_login()
+def delete_admin():
+	id1=int(request.args(0))
+	db(db.news.id==id1).delete()
+	redirect(URL(r=request,f=admin_home))
+	return locals()
+@auth.requires_login()
+def delete_user():
+	id1=int(request.args(0))
+	a=db(db.LD.usr==id1).select(db.LD.ALL)
+	for k in a:
+		b=db(db.news.id==k['new_id']).select(db.news.ALL)[0]
+		if k['l']==True:
+			b.likes-=1
+			b.ranks-=5
+		if k['d']==True:
+			b.dislikes-=1
+			b.ranks+=3
+		b.update_record()
+	db(db.comments.commented_by==id1).delete()		
+	db(db.news.posted_by==id1).delete()		
+	db(db.auth_user.id == id1).delete()
+	redirect(URL(r=request,f=admin_home))
+	return locals()
+@auth.requires_login()
+def list_user():
+	m = db(db.auth_user.id > 0).select(db.auth_user.ALL)
+	t=[]
+	m1 = db(db.category.id > 0).select(db.category.ALL)
+	for k in m1:
+		w=k.name
+		t.append(w)
+	y=[]
+	for k in m:
+		x={}
+		x['id']=k['id']
+		x['fn']=k['first_name']
+		x['ln']=k['last_name']
+		x['em']=k['email']
+		y.append(x)
+	return locals()
+def redirect_after_login(form):
+		c  = auth.user_id
+		d = db(db.auth_user.id == auth.user_id).select(db.auth_user.ALL)[0]
+		m = d['email']
+		if m == 'akshu0494@gmail.com':
+			redirect(URL(r=request,f=admin_home))
+		else :
+			redirect(URL(r=request,f=index))
+auth.settings.login_onaccept.append(redirect_after_login)

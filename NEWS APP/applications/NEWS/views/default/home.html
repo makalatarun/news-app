@@ -1,0 +1,47 @@
+{{extend 'layout.html'}}
+{{include}}
+<body style="background-image:url({{=URL('static/images','stained1.jpg')}})">
+{{for z in t:}}
+{{=A(z,_href=URL('catgry.html',args=z))}}&nbsp;&nbsp;&nbsp;|
+{{pass}}
+<div id = "content">
+<ol>
+<br/>
+<br/>
+{{for z in y:}}
+<li>
+
+<strong><font size="4"><a href={{=z['url']}}>{{=z['Head']}}</a></font></strong>
+<br/>
+<font size="2" color="brown">Category : &nbsp;&nbsp;&nbsp;{{=z['Cat']}}</font>
+<br/>
+<br/>
+{{if z['Des'] != "":}}
+<font size="3">Description&nbsp;:&nbsp;{{=z['Des']}}</font>
+{{else:}}
+<font size="3">No Description</font>
+<br/><br/>
+{{pass}}
+{{if z['video']!=None and z['video']!="":}}
+<iframe title="YouTube video player" width="480" height="390" src={{=z['video']}} frameborder="0" allowfullscreen></iframe>
+{{pass}}
+<br/><br/>
+<font size="2">Posted By&nbsp;:&nbsp;{{=z['By']}}</font>
+<br/>
+<font size="2">Likes : {{=z['likes']}}&nbsp;|&nbsp;Dislikes : {{=z['dislikes']}}</font><br/>
+<i class="icon-thumbs-up"></i>
+<font size="2">{{=A('Like',_href=URL('likes_h.html',args=z['id']))}}</font>&nbsp;&nbsp;|
+<i class="icon-thumbs-down"></i>
+<font size="2">{{=A('Disike',_href=URL('unlike_h.html',args=z['id']))}}&nbsp;&nbsp;|
+<i class="icon-comment"></i>
+{{=A('Comment',_href=URL('add_comments_h.html',args=z['id']))}}&nbsp;&nbsp;|
+<i class="icon-eye-open"></i>
+{{=A('View Comments',_href=URL('view.html',args=z['id']))}}&nbsp;&nbsp;</font>
+<br/>
+<font size="2">Posted On : {{=z['On']}}</font>
+<br/>
+<br/>
+<br/>
+</li>
+{{pass}}
+</body>
